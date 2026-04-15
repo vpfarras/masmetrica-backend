@@ -8,7 +8,15 @@ const app = express();
 // Forzamos a que sea un número para evitar el error de compilación previo
 const PORT: number = parseInt(process.env.PORT || '8080', 10);
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:4200', 
+    'https://storage.googleapis.com' // Esto permite todas las webs de Google Storage
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 app.use('', routes);
 
