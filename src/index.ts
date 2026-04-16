@@ -4,6 +4,9 @@ import * as express from 'express';
 import * as cors from 'cors';
 import routes from './routes';
 
+// IMPORTANTE: Importamos la entidad manualmente para evitar el RepositoryNotFoundError
+import { Users } from './entity/Users'; 
+
 const app = express();
 
 // 1. Configuración del Puerto (Prioridad a Google Cloud Run)
@@ -19,7 +22,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir peticiones sin origin (como Postman o llamadas entre servidores)
     if (!origin) return callback(null, true);
     
     const isAllowed = allowedOrigins.some((allowed) => {
@@ -40,7 +42,6 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Middleware extra para asegurar que las peticiones OPTIONS siempre respondan 200/204
 app.options('*', cors());
 
 // 3. Middlewares de Express
@@ -63,11 +64,13 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
 
-// 6. Conexión a la Base de Datos (Asíncrona)
+// 6. Conexión a la Base de Datos (Modificada para forzar entidades)
 const dbConfig = require('../ormconfig.js');
 
 createConnection({
   ...dbConfig,
+  // Forzamos la carga de la entidad Users directamente aquí
+  entities: [Users], 
   driver: require('mysql2') 
 })
   .then(() => {
@@ -75,5 +78,5 @@ createConnection({
   })
   .catch(error => {
     console.error("❌ ERROR de conexión a DB:", error);
-    // No matamos el proceso para que Cloud Run no entre en bucle de reinicio infinito
+    // No matamos el proceso para evitar bucles de reinicio en Cloud Run
   });
