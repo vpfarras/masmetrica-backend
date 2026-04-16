@@ -5,20 +5,21 @@ import * as cors from 'cors';
 import routes from './routes';
 
 const app = express();
-// Forzamos a que sea un número para evitar el error de compilación previo
+
+// 1. Configuración del Puerto (Prioridad a Google Cloud Run)
 const PORT: number = parseInt(process.env.PORT || '8080', 10);
 
+// 2. Configuración Dinámica de CORS
+const allowedOrigins = [
+  'http://localhost:4200',            // Local
+  'https://masmetrica.es',            // Producción
+  /\.run\.app$/,                      // Backends en Cloud Run (Dev/Prod)
+  /\.googleapis\.com$/                // Frontends en Google Storage (Staging)
+];
+
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      'http://localhost:4200',
-      'https://storage.googleapis.com',
-      // Añadimos una expresión regular para aceptar cualquier subdominio de cloud run y storage
-      /\.a\.run\.app$/, 
-      /\.googleapis\.com$/
-    ];
-    
-    // permitimos peticiones sin origin (como postman o curl)
+  origin: (origin, callback) => {
+    // Permitir peticiones sin origin (como Postman o llamadas entre servidores)
     if (!origin) return callback(null, true);
     
     const isAllowed = allowedOrigins.some((allowed) => {
@@ -29,32 +30,50 @@ app.use(cors({
     if (isAllowed) {
       callback(null, true);
     } else {
+      console.warn(`CORS bloqueado para el origen: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'],
+  credentials: true,
+  optionsSuccessStatus: 204
 }));
+
+// Middleware extra para asegurar que las peticiones OPTIONS siempre respondan 200/204
+app.options('*', cors());
+
+// 3. Middlewares de Express
 app.use(express.json());
+
+// 4. Rutas
 app.use('', routes);
 
-// 1. El servidor arranca primero para que Google Cloud vea que está "vivo"
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor de MásMétrica corriendo en puerto ${PORT}`);
+// Ruta de diagnóstico rápido
+app.get('/health-check', (req, res) => {
+  res.json({ 
+    status: 'online', 
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
 });
 
-// 2. Conectamos a la base de datos
+// 5. Arranque del Servidor
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+});
+
+// 6. Conexión a la Base de Datos (Asíncrona)
 const dbConfig = require('../ormconfig.js');
 
-// Ajuste para asegurar compatibilidad con MySQL 8.4
 createConnection({
   ...dbConfig,
-  driver: require('mysql2') // <--- Esto es lo que soluciona el error de autenticación
+  driver: require('mysql2') 
 })
   .then(() => {
-    console.log("✅ Conexión a Cloud SQL EXITOSA");
+    console.log("✅ Conexión a la Base de Datos EXITOSA");
   })
   .catch(error => {
     console.error("❌ ERROR de conexión a DB:", error);
+    // No matamos el proceso para que Cloud Run no entre en bucle de reinicio infinito
   });
