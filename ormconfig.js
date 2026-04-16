@@ -8,18 +8,17 @@ module.exports = {
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_DATABASE || "userdata",
   
-  // Conexión específica para Google Cloud SQL
   extra: process.env.INSTANCE_CONNECTION_NAME ? {
     socketPath: `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`
   } : {},
 
   synchronize: false,
-  logging: false,
+  logging: true, // Activamos logging para ver qué pasa en el log de Cloud Run
 
-  // Esta es la parte crítica que corrige el RepositoryNotFoundError
+  // ESTA ES LA CONFIGURACIÓN QUE NO FALLA:
+  // Buscamos en la raíz del proyecto cualquier carpeta que contenga 'entity'
   entities: [
-    path.join(__dirname, "dist/entity/**/*.js"),
-    path.join(__dirname, "src/entity/**/*.ts")
+    path.join(__dirname, "**/entity/*.{ts,js}")
   ],
 
   cli: {
