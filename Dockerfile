@@ -1,26 +1,31 @@
-# 1. Usamos Node 22 en versión "slim" para que sea ligero y rápido
+# 1. Usamos Node 22
 FROM node:22-slim
 
-# 2. Directorio de trabajo dentro del contenedor
+# 2. Directorio de trabajo
 WORKDIR /usr/src/app
 
-# 3. Copiamos solo los archivos de dependencias
+# 3. Copiamos archivos de configuración y dependencias
 COPY package*.json ./
+COPY tsconfig*.json ./
+# Copiamos ormconfig si es necesario para el build
+COPY ormconfig.js ./ 
 
-# 4. Instalamos solo dependencias de producción (evitamos las de desarrollo)
-# Usamos --legacy-peer-deps por si acaso, igual que hicimos en local
-RUN npm install --only=production --legacy-peer-deps
+# 4. Instalamos TODAS las dependencias (necesitamos las de desarrollo para compilar)
+RUN npm install --legacy-peer-deps
 
-# 5. Copiamos la carpeta 'dist' que acabas de generar con el build
-COPY dist ./dist
+# 5. Copiamos todo el código fuente
+COPY . .
 
-COPY ormconfig.js ./
+# 6. Ejecutamos el build de TypeScript (esto genera la carpeta 'dist')
+RUN npm run build
 
+# 7. (Opcional) Limpiamos dependencias de desarrollo para que sea ligero
+RUN npm prune --production
+
+# 8. Permisos y puertos
 RUN chmod +x dist/index.js
-
-# 6. Definimos el puerto estándar de Google Cloud
 ENV PORT=8080
 EXPOSE 8080
 
-# 7. Arrancamos la aplicación
+# 9. Arrancamos
 CMD [ "node", "dist/index.js" ]
