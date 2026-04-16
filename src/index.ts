@@ -9,10 +9,29 @@ const app = express();
 const PORT: number = parseInt(process.env.PORT || '8080', 10);
 
 app.use(cors({
-  origin: [
-    'http://localhost:4200', 
-    'https://storage.googleapis.com' // Esto permite todas las webs de Google Storage
-  ],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'http://localhost:4200',
+      'https://storage.googleapis.com',
+      // Añadimos una expresión regular para aceptar cualquier subdominio de cloud run y storage
+      /\.a\.run\.app$/, 
+      /\.googleapis\.com$/
+    ];
+    
+    // permitimos peticiones sin origin (como postman o curl)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some((allowed) => {
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return allowed === origin;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
