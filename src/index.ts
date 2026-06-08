@@ -41,32 +41,36 @@ app.get('/health-check', (req, res) => {
   res.json({ status: 'online', env: process.env.NODE_ENV || 'development' });
 });
 
-// 4. Conexión a DB - FORZADO PARA CLOUD RUN
+// 4. Conexión a DB - COMPATIBLE CON EL PIPELINE AUTOMÁTICO (DEV Y PROD)
+const path = require('path');
+
 createConnection({
   type: "mysql",
-  // Si estamos en Cloud Run (existe la instancia), dejamos el host vacío para obligar al socket
+  // Si Google nos da la instancia, dejamos el host vacío para forzar el conector de Socket UNIX
   host: process.env.INSTANCE_CONNECTION_NAME ? "" : "127.0.0.1",
   port: 3306,
-  username: process.env.DB_USERNAME || "app_user",
-  password: process.env.DB_PASSWORD || "MasMetrica",
-  database: process.env.DB_DATABASE || "userdata_prod",
   
-  // Forzamos el socket UNIX nativo de Google Cloud SQL
+  // Leemos las variables automáticas que Google Cloud Build inyecta en cada entorno
+  username: process.env.DB_USERNAME || "app_user",
+  password: process.env.DB_PASSWORD || "MasMetrica2026", 
+  database: process.env.DB_DATABASE || "userdata",
+  
+  entities: [
+    path.join(__dirname, "**/entity/*.{ts,js}")
+  ],
+  
   extra: process.env.INSTANCE_CONNECTION_NAME ? {
     socketPath: `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`
   } : {},
 
   synchronize: false,
   logging: true,
-  entities: [Users], 
   driver: require('mysql2') 
 })
 .then(() => {
-  console.log("✅ Base de Datos Conectada EXITOSAMENTE");
-  
-  // Abrimos el puerto solo si la base de datos responde
+  console.log("✅ Base de Datos Conectada");
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor de MásMétrica corriendo en puerto ${PORT}`);
+    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
   });
 })
 .catch(error => {
