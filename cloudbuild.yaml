@@ -1,0 +1,31 @@
+steps:
+  # 1. Instalar dependencias
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+
+  # 2. Compilar el proyecto (si usas TypeScript)
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'build']
+
+  # 3. Construir la imagen de Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/masmetrica-backend-dev', '.']
+
+  # 4. Subir la imagen al registro
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/masmetrica-backend-dev']
+
+  # 5. Desplegar en Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'masmetrica-backend-dev'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/masmetrica-backend-dev'
+      - '--region'
+      - 'europe-southwest1'
+
+images:
+  - 'gcr.io/$PROJECT_ID/masmetrica-backend-dev'

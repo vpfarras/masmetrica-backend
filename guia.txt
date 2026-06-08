@@ -1,0 +1,31 @@
+///// ARRANCAR EL BACKEND EN LOCAL /////
+cd area-cliente-back
+# Asegurare XAMPP esté encendido (MySQL)
+npm run dev
+
+//// ARRANCAR EL FRONTED EN LOCAL  //////
+cd area-cliente-front
+# Comando de compatibilidad para evitar el error de OpenSSL
+$env:NODE_OPTIONS = "--openssl-legacy-provider"
+npm run start
+
+VERLO EN : http://localhost:4200
+
+//// DESPLEGAR EN DEVELOP ////
+git add .
+git commit -m "feat: mejora visual para demo"
+git push origin develop
+
+Ir a la Consola de Google Cloud Build. https://console.cloud.google.com/cloud-build/
+ver activadores
+
+Ir al navegador rápido: Abre la pestaña de Cloud Build -> Historial
+
+//// DESPLEGAR EN PRODUCCIÓN ////
+git checkout main
+git merge develop
+git push origin main
+
+//// Auditoría Antigravity ////
+cd ../antigravity
+terraform plan

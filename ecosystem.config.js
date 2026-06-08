@@ -10,7 +10,7 @@ module.exports = {
         DB_PASSWORD: 'MasM3trica2@72',
         DB_DATABASE: 'userdata',
         JWT_SECRET: 'BDPEK@',
-        PORT: '3000',
+        PORT: '8080',
         BASE_URL: 'https://masmetrica.es/login'
       }
     }
