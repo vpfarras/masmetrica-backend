@@ -41,25 +41,32 @@ app.get('/health-check', (req, res) => {
   res.json({ status: 'online', env: process.env.NODE_ENV || 'development' });
 });
 
-// 4. Conexión a DB - COMPATIBLE CON EL PIPELINE AUTOMÁTICO (DEV Y PROD)
+// 4. Conexión a DB Inteligente (Local, Dev Cloud y Prod Cloud)
 const path = require('path');
+
+// Averiguamos en qué entorno estamos
+const isLocal = !process.env.INSTANCE_CONNECTION_NAME && (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'production');
+const isCloudSQL = !!process.env.INSTANCE_CONNECTION_NAME;
 
 createConnection({
   type: "mysql",
-  // Si Google nos da la instancia, dejamos el host vacío para forzar el conector de Socket UNIX
-  host: process.env.INSTANCE_CONNECTION_NAME ? "" : "127.0.0.1",
-  port: 3306,
   
-  // Leemos las variables automáticas que Google Cloud Build inyecta en cada entorno
-  username: process.env.DB_USERNAME || "app_user",
-  password: process.env.DB_PASSWORD || "MasMetrica2026", 
+  // Si está en Google Cloud con conector, el host va vacío para activar el socket UNIX.
+  // Si está en local o Cloud estándar, usa DB_HOST o el localhost de XAMPP.
+  host: isCloudSQL ? "" : (process.env.DB_HOST || "127.0.0.1"),
+  port: parseInt(process.env.DB_PORT || "3306", 10),
+  
+  username: process.env.DB_USERNAME || process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "", // En local XAMPP suele ser vacío o "root"
   database: process.env.DB_DATABASE || "userdata",
   
+  // Búsqueda dinámica de entidades para evitar fallos de compilación en Cloud Build
   entities: [
     path.join(__dirname, "**/entity/*.{ts,js}")
   ],
   
-  extra: process.env.INSTANCE_CONNECTION_NAME ? {
+  // El socket físico de Google SOLO se activa si la variable existe en la nube
+  extra: isCloudSQL ? {
     socketPath: `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`
   } : {},
 
@@ -68,9 +75,9 @@ createConnection({
   driver: require('mysql2') 
 })
 .then(() => {
-  console.log("✅ Base de Datos Conectada");
+  console.log("✅ Base de Datos Conectada con éxito");
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+    console.log(`🚀 Servidor corriendo en puerto ${PORT} (Modo: ${process.env.NODE_ENV || 'local'})`);
   });
 })
 .catch(error => {
