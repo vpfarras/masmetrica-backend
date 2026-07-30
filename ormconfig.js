@@ -1,27 +1,36 @@
 const path = require('path');
+require('dotenv').config(); // Carga el archivo .env en local
+
+const instanceConnectionName = process.env.INSTANCE_CONNECTION_NAME;
+const isProduction = process.env.NODE_ENV === 'production' || !!instanceConnectionName;
 
 module.exports = {
   type: "mysql",
-  host: process.env.INSTANCE_CONNECTION_NAME ? "" : (process.env.DB_HOST || "127.0.0.1"),
-  port: 3306,
-  username: process.env.DB_USER || process.env.DB_USERNAME || "root",
+  username: process.env.DB_USERNAME || "root",
   password: process.env.DB_PASSWORD || "",
   database: process.env.DB_DATABASE || "userdata",
-  
-  extra: process.env.INSTANCE_CONNECTION_NAME ? {
-    socketPath: `/cloudsql/${process.env.INSTANCE_CONNECTION_NAME}`
-  } : {},
 
   synchronize: false,
-  logging: true, // Activamos logging para ver qué pasa en el log de Cloud Run
+  logging: true,
 
-  // ESTA ES LA CONFIGURACIÓN QUE NO FALLA:
-  // Buscamos en la raíz del proyecto cualquier carpeta que contenga 'entity'
-  entities: [
-    path.join(__dirname, "**/entity/*.{ts,js}")
-  ],
+  // Si estamos en la nube usa dist, si estamos en local usa dist y src
+  entities: isProduction 
+    ? [path.join(__dirname, "dist/entity/**/*.js")]
+    : [
+        path.join(__dirname, "dist/entity/**/*.js"),
+        path.join(__dirname, "src/entity/**/*.ts")
+      ],
 
   cli: {
     entitiesDir: "src/entity"
-  }
+  },
+
+  ...(instanceConnectionName ? {
+    extra: {
+      socketPath: "/cloudsql/" + instanceConnectionName
+    }
+  } : {
+    host: process.env.DB_HOST || "127.0.0.1",
+    port: parseInt(process.env.DB_PORT || "3306", 10)
+  })
 };

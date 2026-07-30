@@ -34,8 +34,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only ./src/index.ts",
-    "deploy:test": "npm run build && gcloud run deploy masmetrica-backend --source . --region europe-southwest1 --set-env-vars DB_HOST=/cloudsql/composite-bruin-174106:europe-southwest1:masmetrica-db-test,DB_PORT=3306,DB_USERNAME=app_user,DB_PASSWORD=MasMetrica2026,DB_DATABASE=userdata,NODE_ENV=test --add-cloudsql-instances composite-bruin-174106:europe-southwest1:masmetrica-db-test --allow-unauthenticated",
-    "deploy:prod": "npm run build && gcloud run deploy masmetrica-backend-prod --source . --region europe-southwest1 --set-env-vars DB_HOST=/cloudsql/composite-bruin-174106:europe-southwest1:masmetrica-db-test,DB_PORT=3306,DB_USERNAME=app_user,DB_PASSWORD=MasMetrica2026,DB_DATABASE=userdata_prod,NODE_ENV=production --add-cloudsql-instances composite-bruin-174106:europe-southwest1:masmetrica-db-test --allow-unauthenticated"
+    "deploy:dev": "gcloud run deploy masmetrica-backend-dev --source . --region europe-southwest1 --add-cloudsql-instances composite-bruin-174106:europe-southwest1:masmetrica-db-mini --allow-unauthenticated",
+    "deploy:prod": "gcloud run deploy masmetrica-backend-prod --source . --region europe-southwest1 --add-cloudsql-instances composite-bruin-174106:europe-southwest1:masmetrica-db-mini --allow-unauthenticated"
   },
   "engines": {
     "node": ">=22.12.0"

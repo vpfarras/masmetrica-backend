@@ -4,14 +4,8 @@ module.exports = {
       name: 'index',
       script: './dist/index.js',
       env: {
-        DB_HOST: 'localhost',
-        DB_PORT: '3306',
-        DB_USERNAME: 'root',
-        DB_PASSWORD: 'MasM3trica2@72',
-        DB_DATABASE: 'userdata',
-        JWT_SECRET: 'BDPEK@',
-        PORT: '8080',
-        BASE_URL: 'https://masmetrica.es/login'
+        NODE_ENV: process.env.NODE_ENV || 'development',
+        PORT: process.env.PORT || '8080'
       }
     }
   ]
